@@ -1,0 +1,21 @@
+# DeepGD Demo Code
+This piece of code contains a simple demonstration of DeepGD. It includes:
+
+* a dataloader for Rome Graphs dataset,
+* a basic implementation of DeepGD model,
+* and demo notebook that shows how to train DeepGD models from scratch with minimal amount of codes.
+
+## Environment
+This code has been tested on python3.9 + cuda11.3 + pytorch1.9 + pyg2.0. Anaconda is suggested for managing dependencies, as installing pyg with pip can be tricky. 
+
+## Configuration
+The default hyper-parameters of the model have been configured to reproduce the best performance reported in the [DeepGD paper](https://arxiv.org/abs/2106.15347). 
+
+However, the layout initializer for the dataset is by default `nx.drawing.random_layout`, which **is not** PivotMDS that yields the best results shown in the paper (random initialization already produces good enough results though). Feel free to modify this behavior by passing a different initializer with `dataset = RomeDataset(layout_initializer=something_else)`. A custom initializer can be any function that follows the behavior of `nx.drawing.random_layout`.
+
+## Training
+With Nvidia V100, each training epoch takes 30s on average. It takes around 600 epochs to completly converge.
+
+## Evaluation
+For evaluation on custom data, the easiest way is to subclass `RomeDataset` and override `raw_file_names` and `process_raw` methods.
+> **Caveat**: Even though the behavior of `process` do not need to be overriden, it is required to have a dummy `def process(self): super().process()` defined in the subclasses to make it work properly. For details, please refer to `pyg.data.InMemoryDataset` [documentation](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html#torch_geometric.data.InMemoryDataset).
