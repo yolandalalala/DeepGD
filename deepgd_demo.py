@@ -9,7 +9,7 @@ import os.path
 import re
 import random
 
-from tqdm.autonotebook import tqdm
+from tqdm.auto import tqdm
 import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -17,7 +17,8 @@ import pandas as pd
 import torch
 import torch_geometric as pyg
 
-DATA_ROOT = 'deepgd_data'
+
+DATA_ROOT = "deepgd_data"
 
 
 class RomeDataset(pyg.data.InMemoryDataset):
@@ -81,6 +82,8 @@ class RomeDataset(pyg.data.InMemoryDataset):
             full_edge_index=full_edge_index,
             full_edge_attr=full_edge_attr,
             d=d,
+            n=G.number_of_nodes(),
+            m=G.number_of_edges(),
         )
 
     def download(self):
@@ -120,6 +123,73 @@ def get_edges(node_pos, batch):
 def get_full_edges(node_pos, batch):
     edges = node_pos[batch.full_edge_index.T]
     return edges[:, 0, :], edges[:, 1, :]
+
+
+def get_raw_edges(node_pos, batch):
+    edges = node_pos[batch.raw_edge_index.T]
+    return edges[:, 0, :], edges[:, 1, :]
+
+
+def get_per_graph_property(batch, property_getter):
+    return torch.tensor(list(map(property_getter, batch.to_data_list())), 
+                        device=batch.x.device)
+
+
+def map_node_indices_to_graph_property(batch, node_index, property_getter):
+    return get_per_graph_property(batch, property_getter)[batch.batch][node_index]
+
+
+def map_node_indices_to_node_degrees(real_edges, node_indices):
+    node, degrees = np.unique(real_edges[:, 0].detach().cpu().numpy(), return_counts=True)
+    return torch.tensor(degrees[node_indices], device=real_edges.device)
+
+
+def get_counter_clockwise_sorted_angle_vertices(edges, pos):
+    if type(pos) is torch.Tensor:
+        edges = edges.cpu().detach().numpy()
+        pos = pos.cpu().detach().numpy()
+    u, v = edges[:, 0], edges[:, 1]
+    diff = pos[v] - pos[u]
+    diff_normalized = l2_normalize(diff)
+    # get cosine angle between uv and y-axis
+    cos = diff_normalized @ np.array([[1],[0]])
+    # get radian between uv and y-axis
+    radian = np.arccos(cos) * np.expand_dims(np.sign(diff[:, 1]), axis=1)
+    # for each u, sort edges based on the position of v
+    sorted_idx = sorted(np.arange(len(edges)), key=lambda e: (u[e], radian[e]))
+    sorted_v = v[sorted_idx]
+    # get start index for each u
+    idx = np.unique(u, return_index=True)[1]
+    roll_idx = np.arange(1, len(u) + 1)
+    roll_idx[np.roll(idx - 1, -1)] = idx
+    rolled_v = sorted_v[roll_idx]
+    return np.stack([u, sorted_v, rolled_v]).T[sorted_v != rolled_v]
+
+
+def get_radians(pos, batch, 
+                return_node_degrees=False, 
+                return_node_indices=False, 
+                return_num_nodes=False, 
+                return_num_real_edges=False):
+    real_edges = batch.raw_edge_index.T
+    angles = get_counter_clockwise_sorted_angle_vertices(real_edges, pos)
+    u, v1, v2 = angles[:, 0], angles[:, 1], angles[:, 2]
+    e1 = l2_normalize(pos[v1] - pos[u])
+    e2 = l2_normalize(pos[v2] - pos[u])
+    radians = (e1 * e2).sum(dim=1).acos()
+    result = (radians,)
+    if return_node_degrees:
+        degrees = map_node_indices_to_node_degrees(real_edges, u)
+        result += (degrees,)
+    if return_node_indices:
+        result += (u,)
+    if return_num_nodes:
+        node_counts = map_node_indices_to_graph_property(batch, angles[:,0], lambda g: g.num_nodes)
+        result += (node_counts,)
+    if return_num_real_edges:
+        edge_counts = map_node_indices_to_graph_property(batch, angles[:,0], lambda g: len(g.raw_edge_index.T))
+        result += (edge_counts,)
+    return result[0] if len(result) == 1 else result
 
 
 class GNNLayer(nn.Module):
@@ -319,3 +389,70 @@ class Stress(nn.Module):
         index = batch.batch[batch.edge_index[0]]
         graph_stress = torch_scatter.scatter(edge_stress, index)
         return graph_stress if self.reduce is None else self.reduce(graph_stress)
+    
+    
+class EdgeVar(nn.Module):
+    def __init__(self, reduce=torch.mean):
+        super().__init__()
+        self.reduce = reduce
+
+    def forward(self, node_pos, batch):
+        edge_idx = batch.raw_edge_index.T
+        start, end = get_raw_edges(node_pos, batch)
+        eu = end.sub(start).norm(dim=1)
+        edge_var = eu.sub(1).square()
+        index = batch.batch[batch.raw_edge_index[0]]
+        graph_var = torch_scatter.scatter(edge_var, index, reduce="mean")
+        return graph_var if self.reduce is None else self.reduce(graph_var)
+    
+    
+class Occlusion(nn.Module):
+    def __init__(self, gamma=1, reduce=torch.mean):
+        super().__init__()
+        self.gamma = gamma
+        self.reduce = reduce
+        
+    def forward(self, node_pos, batch):
+        start, end = get_full_edges(node_pos, batch)
+        eu = end.sub(start).norm(dim=1)
+        edge_occusion = eu.mul(-self.gamma).exp()
+        index = batch.batch[batch.edge_index[0]]
+        graph_occusion = torch_scatter.scatter(edge_occusion, index)
+        return graph_occusion if self.reduce is None else self.reduce(graph_occusion)
+    
+
+class IncidentAngle(nn.Module):
+    def __init__(self, reduce=torch.mean):
+        super().__init__()
+        self.reduce = reduce
+    
+    def forward(self, node_pos, batch):
+        theta, degrees, indices = get_radians(node_pos, batch, 
+                                              return_node_degrees=True, 
+                                              return_node_indices=True)
+        phi = degrees.float().pow(-1).mul(2*np.pi)
+        angle_l1 = phi.sub(theta).abs()
+        index = batch.batch[indices]
+        graph_l1 = torch_scatter.scatter(angle_l1, index)
+        return graph_l1 if self.reduce is None else self.reduce(graph_l1)
+    
+
+class TSNEScore(nn.Module):
+    def __init__(self, sigma=1, reduce=torch.mean):
+        super().__init__()
+        self.sigma = sigma
+        self.reduce = reduce
+        
+    def forward(self, node_pos, batch):
+        p = batch.full_edge_attr[:, 0].div(-2 * self.sigma**2).exp()
+        sum_src = torch_scatter.scatter(p, batch.full_edge_index[0])[batch.full_edge_index[0]]
+        sum_dst = torch_scatter.scatter(p, batch.full_edge_index[1])[batch.full_edge_index[1]]
+        p = (p / sum_src + p / sum_dst) / (2 * batch.n[batch.batch[batch.edge_index[0]]])
+        start, end = get_full_edges(node_pos, batch)
+        eu = end.sub(start).norm(dim=1)
+        index = batch.batch[batch.full_edge_index[0]]
+        q = 1 / (1 + eu.square())
+        q /= torch_scatter.scatter(q, index)[index]
+        edge_kl = (p.log() - q.log()).mul(p)
+        graph_kl = torch_scatter.scatter(edge_kl, index)
+        return graph_kl if self.reduce is None else self.reduce(graph_kl)
