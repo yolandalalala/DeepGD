@@ -1,9 +1,9 @@
-# DeepGD Demo Code
-This piece of code contains a simple demonstration of DeepGD. It includes:
+# DeepGD: A Deep Learning Framework for Graph Drawing Using GNN
+This repo contains a simple demonstration for the IEEE CG&A21 paper entitled "[DeepGD: A Deep Learning Framework for Graph Drawing Using GNN](https://arxiv.org/abs/2106.15347)". It includes:
 
 * a dataloader for Rome Graphs dataset,
 * a basic implementation of DeepGD model,
-* and demo notebook that shows how to train DeepGD models from scratch with minimal amount of codes.
+* and a demo notebook that shows how to train DeepGD models from scratch with minimal amount of codes.
 
 ## Environment
 This code has been tested on python3.9 + cuda11.3 + pytorch1.9 + pyg2.0. Anaconda is suggested for managing dependencies, as installing pyg with pip can be tricky. 
@@ -19,3 +19,18 @@ With Nvidia V100, each training epoch takes 30s on average. It takes around 600 
 ## Evaluation
 For evaluation on custom data, the easiest way is to subclass `RomeDataset` and override `raw_file_names` and `process_raw` methods.
 > **Caveat**: Even though the behavior of `process` do not need to be overriden, it is required to have a dummy `def process(self): super().process()` defined in the subclasses to make it work properly. For details, please refer to `pyg.data.InMemoryDataset` [documentation](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html#torch_geometric.data.InMemoryDataset).
+
+## Citation
+If you used our code or find our work useful in your research, please consider citing:
+```
+@article{deepgd,
+author={Wang, Xiaoqi and Yen, Kevin and Hu, Yifan and Shen, Han-Wei},
+journal={IEEE Computer Graphics and Applications},
+title={DeepGD: A Deep Learning Framework for Graph Drawing Using GNN},
+year={2021},
+volume={41},
+number={5},
+pages={32-44},
+doi={10.1109/MCG.2021.3093908}
+}
+```
