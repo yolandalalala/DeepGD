@@ -1,21 +1,17 @@
+import os.path
+import re
+import random
 from itertools import chain
 
 import torch
 from torch import nn
 import torch_geometric as pyg
 import torch_scatter
-
-import os.path
-import re
-import random
-
-from tqdm.auto import tqdm
 import numpy as np
+import pandas as pd
 import networkx as nx
 import matplotlib.pyplot as plt
-import pandas as pd
-import torch
-import torch_geometric as pyg
+from tqdm.auto import tqdm
 
 
 DATA_ROOT = "deepgd_data"
