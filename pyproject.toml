@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "deepgd-demo"
+version = "0.1.0"
+description = "This repo contains a simple demonstration for the IEEE CG&A21 paper entitled \"DeepGD: A Deep Learning Framework for Graph Drawing Using GNN\""
+authors = ["Xiaoqi Wang <xiaoqiwang2582@gmail.com>"]
+readme = "README.md"
+packages = [{include = "deepgd_demo"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+torch = "~1.13"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
