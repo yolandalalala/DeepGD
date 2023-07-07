@@ -6,7 +6,7 @@ This repo contains a simple demonstration for the IEEE CG&A21 paper entitled "[D
 * and a demo notebook that shows how to train DeepGD models from scratch with minimal amount of codes.
 
 ## Environment
-This code has been tested on python3.9 + cuda11.3 + pytorch1.9 + pyg2.0. Anaconda is suggested for managing dependencies, as installing pyg with pip can be tricky. 
+This code has been tested on python3.10 + cuda11.8 + pytorch2.0 + pyg2.3. Anaconda is suggested for managing dependencies, as installing pyg with pip can be tricky. 
 
 ## Configuration
 The default hyper-parameters of the model have been configured to reproduce the best performance reported in the [DeepGD paper](https://arxiv.org/abs/2106.15347). 
