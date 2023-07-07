@@ -9,20 +9,9 @@ packages = []
 [tool.poetry.dependencies]
 python = "~3.10"
 torch = "~2.0"
-pandas = "^1.4"
-matplotlib = "^3.7"
 torch-geometric = "^2.3"
 torch-scatter = { version = "2.1.1", source = "pyg-cuda" }
 torch-sparse = { version = "0.6.17", source = "pyg-cuda" }
-boto3 = "^1.26"
-frozendict = "^2.3"
-more-itertools = "^9.1"
-ssgetpy = "^1.0rc2"
-natsort = "^8.3"
-python-dotenv = "^1.0"
-s3fs = "^2023.6"
-deepdiff = "^6.3.0"
-feast = "^0.31.1"
 
 
 [[tool.poetry.source]]
