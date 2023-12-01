@@ -15,7 +15,7 @@ class Stress(nn.Module):
         eu = (start - end).norm(dim=1)
         d = batch.full_edge_attr[:, 0]
         edge_stress = eu.sub(d).abs().div(d).square()
-        index = batch.batch[batch.edge_index[0]]
+        index = batch.batch[batch.full_edge_index[0]]
         graph_stress = torch_scatter.scatter(edge_stress, index)
         return graph_stress if self.reduce is None else self.reduce(graph_stress)
     
