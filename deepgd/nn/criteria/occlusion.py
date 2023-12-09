@@ -15,6 +15,6 @@ class Occlusion(nn.Module):
         start, end = get_full_edges(node_pos, batch)
         eu = end.sub(start).norm(dim=1)
         edge_occusion = eu.mul(-self.gamma).exp()
-        index = batch.batch[batch.edge_index[0]]
+        index = batch.batch[batch.full_edge_index[0]]
         graph_occusion = torch_scatter.scatter(edge_occusion, index)
         return graph_occusion if self.reduce is None else self.reduce(graph_occusion)

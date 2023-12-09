@@ -2,6 +2,7 @@ import torch
 from torch import nn
 import torch_geometric as pyg
 
+from .weighted_nnconv import WeightedNNConv
 
 class GNNLayer(nn.Module):
     def __init__(self,
@@ -23,7 +24,7 @@ class GNNLayer(nn.Module):
             in_dim = nfeat_dims
             out_dim = nfeat_dims
         self.enet = nn.Linear(efeat_dim, in_dim * out_dim) if edge_net is None and efeat_dim > 0 else edge_net
-        self.conv = pyg.nn.NNConv(in_dim, out_dim, nn=self.enet, aggr=aggr, root_weight=root_weight)
+        self.conv = WeightedNNConv(in_dim, out_dim, nn=self.enet, aggr=aggr, root_weight=root_weight)
         self.dense = nn.Linear(out_dim, out_dim) if dense else nn.Identity()
         self.bn = pyg.nn.BatchNorm(out_dim) if bn else nn.Identity()
         self.act = nn.LeakyReLU() if act else nn.Identity()
@@ -33,7 +34,7 @@ class GNNLayer(nn.Module):
         
     def forward(self, v, e, data):
         v_ = v
-        v = self.conv(v, data.edge_index, e)
+        v = self.conv(v, data.edge_index, e, data.edge_weight)
         v = self.dense(v)
         v = self.bn(v)
         v = self.act(v)

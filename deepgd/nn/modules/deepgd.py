@@ -43,7 +43,7 @@ class DeepGD(nn.Module):
         ])
         self.normalize = normalize
 
-    def forward(self, data, weights=None, output_hidden=False, numpy=False):
+    def forward(self, data, output_hidden=False, numpy=False):
         v = data.init_pos if data.init_pos is not None else generate_rand_pos(len(data.x)).to(data.x.device)
         if self.normalize is not None:
             v = self.normalize(v, data)
@@ -52,7 +52,7 @@ class DeepGD(nn.Module):
         for block in chain(self.in_blocks, 
                            self.hid_blocks, 
                            self.out_blocks):
-            v = block(v, data, weights)
+            v = block(v, data)
             if output_hidden:
                 hidden.append(v.detach().cpu().numpy() if numpy else v)
         if not output_hidden:
