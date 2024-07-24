@@ -3,6 +3,7 @@ from ...functions import *
 import torch
 from torch import nn
 import numpy as np
+from torch_geometric.utils import scatter
 
 
 class IncidentAngle(nn.Module):
@@ -17,6 +18,6 @@ class IncidentAngle(nn.Module):
         phi = degrees.float().pow(-1).mul(2*np.pi)
         angle_l1 = phi.sub(theta).abs()
         index = batch.batch[indices]
-        graph_l1 = torch_scatter.scatter(angle_l1, index)
+        graph_l1 = scatter(angle_l1, index)
         return graph_l1 if self.reduce is None else self.reduce(graph_l1)
     

@@ -2,7 +2,7 @@ from ...functions import *
 
 import torch
 from torch import nn
-import torch_scatter
+from torch_geometric.utils import scatter
 
 
 class EdgeVar(nn.Module):
@@ -16,5 +16,5 @@ class EdgeVar(nn.Module):
         eu = end.sub(start).norm(dim=1)
         edge_var = eu.sub(1).square()
         index = batch.batch[batch.raw_edge_index[0]]
-        graph_var = torch_scatter.scatter(edge_var, index, reduce="mean")
+        graph_var = scatter(edge_var, index, reduce="mean")
         return graph_var if self.reduce is None else self.reduce(graph_var)

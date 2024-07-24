@@ -2,7 +2,7 @@ from ...functions import *
 
 import torch
 from torch import nn
-import torch_scatter
+from torch_geometric.utils import scatter
 
 
 class Stress(nn.Module):
@@ -16,6 +16,6 @@ class Stress(nn.Module):
         d = batch.full_edge_attr[:, 0]
         edge_stress = eu.sub(d).abs().div(d).square()
         index = batch.batch[batch.full_edge_index[0]]
-        graph_stress = torch_scatter.scatter(edge_stress, index)
+        graph_stress = scatter(edge_stress, index)
         return graph_stress if self.reduce is None else self.reduce(graph_stress)
     
