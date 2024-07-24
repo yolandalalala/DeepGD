@@ -1,4 +1,4 @@
---find-links https://data.pyg.org/whl/torch-2.0.0+cu118.html
+#--find-links https://data.pyg.org/whl/torch-2.0.0+cu118.html
 
 certifi==2023.5.7 ; python_version >= "3.10" and python_version < "3.11"
 charset-normalizer==3.1.0 ; python_version >= "3.10" and python_version < "3.11"
@@ -18,10 +18,8 @@ scikit-learn==1.3.0 ; python_version >= "3.10" and python_version < "3.11"
 scipy==1.11.1 ; python_version >= "3.10" and python_version < "3.11"
 sympy==1.12 ; python_version >= "3.10" and python_version < "3.11"
 threadpoolctl==3.1.0 ; python_version >= "3.10" and python_version < "3.11"
-torch-geometric==2.3.1 ; python_version >= "3.10" and python_version < "3.11"
-torch-scatter==2.1.1+pt20cu118 ; python_version >= "3.10" and python_version < "3.11"
-torch-sparse==0.6.17+pt20cu118 ; python_version >= "3.10" and python_version < "3.11"
-torch==2.0.1 ; python_version >= "3.10" and python_version < "3.11"
+torch-geometric==2.4.0 ; python_version >= "3.10" and python_version < "3.11"
+# torch==2.0.1 ; python_version >= "3.10" and python_version < "3.11"
 tqdm==4.65.0 ; python_version >= "3.10" and python_version < "3.11"
 typing-extensions==4.7.1 ; python_version >= "3.10" and python_version < "3.11"
 urllib3==2.0.3 ; python_version >= "3.10" and python_version < "3.11"

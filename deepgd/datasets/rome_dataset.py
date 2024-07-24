@@ -1,92 +1,108 @@
-from . import *
+from deepgd.constants import DATASET_ROOT
+from deepgd.data import BaseData, GraphDrawingData
 
 import os
 import re
+import hashlib
+from typing import Callable, Optional, TypeVar, Iterator
 
+from tqdm.auto import tqdm
 import numpy as np
 import torch
 import torch_geometric as pyg
 import networkx as nx
-from tqdm.auto import tqdm
+
+
+DATATYPE = TypeVar("DATATYPE", bound=BaseData)
 
 
 class RomeDataset(pyg.data.InMemoryDataset):
+
+    DEFAULT_NAME = "Rome"
+    DEFAULT_URL = "https://www.graphdrawing.org/download/rome-graphml.tgz"
+    GRAPH_NAME_REGEX = re.compile(r"grafo(\d+)\.(\d+)")
+
     def __init__(self, *,
-                 url='http://www.graphdrawing.org/download/rome-graphml.tgz',
-                 root=f'{DATA_ROOT}/Rome',
-                 layout_initializer=None,
-                 transform=None,
-                 pre_transform=None,
-                 pre_filter=None):
-        self.url = url
-        self.initializer = layout_initializer or nx.drawing.random_layout
-        super().__init__(root, transform, pre_transform, pre_filter)
-        self.data, self.slices = torch.load(self.processed_paths[0])
+                 url: str = DEFAULT_URL,
+                 root: str = DATASET_ROOT,
+                 name: str = DEFAULT_NAME,
+                 index: Optional[list[str]] = None,
+                 datatype: type[DATATYPE] = GraphDrawingData):
+        self.url: str = url
+        self.dataset_name: str = name
+        self.index: Optional[list[str]] = index
+        self.datatype: type[DATATYPE] = datatype
+        super().__init__(
+            root=os.path.join(root, name),
+            transform=self.datatype.dynamic_transform,
+            pre_transform=self.datatype.pre_transform,
+            pre_filter=self.datatype.pre_filter
+        )
+        self.data, self.slices = torch.load(self.data_path)
+        with open(self.index_path, "r") as index_file:
+            self.index = index_file.read().strip().split("\n")
+        data_list = map(datatype.static_transform, tqdm(self, desc=f"Transform graphs"))
+        data_dict = {data.G.graph["name"]: data for data in data_list}
+        data_list = [data_dict[name] for name in self.index]
+        self.data, self.slices = self.collate(list(data_list))
 
-    @property
-    def raw_file_names(self):
-        metafile = "rome/Graph.log"
-        if os.path.exists(metadata_path := f'{self.raw_dir}/{metafile}'):
-            return list(map(lambda f: f'rome/{f}.graphml',
-                            self.get_graph_names(metadata_path)))
-        else:
-            return [metafile]
-
-    @property
-    def processed_file_names(self):
-        return ['data.pt']
-
-    @classmethod
-    def get_graph_names(cls, logfile):
+    def _parse_metadata(self, logfile: str) -> Iterator[str]:
         with open(logfile) as fin:
             for line in fin.readlines():
-                if match := re.search(r'name: (grafo\d+\.\d+)', line):
-                    yield f'{match.group(1)}'
+                if match := self.GRAPH_NAME_REGEX.search(line):
+                    yield match.group(0)
 
-    def process_raw(self):
-        graphmls = sorted(self.raw_paths,
-                          key=lambda x: int(re.search(r'grafo(\d+)', x).group(1)))
-        for file in tqdm(graphmls, desc=f"Loading graphs"):
+    @property
+    def raw_file_names(self) -> list[str]:
+        metadata_file = "rome/Graph.log"
+        if os.path.exists(metadata_path := os.path.join(self.raw_dir, metadata_file)):
+            return list(map(lambda f: f"rome/{f}.graphml", self._parse_metadata(metadata_path)))
+        return [metadata_file]
+
+    @property
+    def processed_file_names(self) -> list[str]:
+        return ["data.pt", "index.txt"]
+
+    @property
+    def data_path(self) -> str:
+        return self.processed_paths[0]
+
+    @property
+    def index_path(self) -> str:
+        return self.processed_paths[1]
+
+    def generate(self) -> Iterator[nx.Graph]:
+        def key(path):
+            match = self.GRAPH_NAME_REGEX.search(path)
+            return int(match.group(1)), int(match.group(2))
+        for file in tqdm(sorted(self.raw_paths, key=key), desc=f"Loading graphs"):
             G = nx.read_graphml(file)
-            if nx.is_connected(G):
-                yield nx.convert_node_labels_to_integers(G)
+            G.graph.update(dict(
+                name=self.GRAPH_NAME_REGEX.search(file).group(0),
+                dataset=self.dataset_name
+            ))
+            yield G
 
-    def convert(self, G):
-        apsp = dict(nx.all_pairs_shortest_path_length(G))
-        init_pos = torch.tensor(np.array(list(self.initializer(G).values())))
-        full_edges, attr_d = zip(*[((u, v), d) for u in apsp for v, d in apsp[u].items()])
-        raw_edge_index = pyg.utils.to_undirected(torch.tensor(list(G.edges)).T)
-        full_edge_index, d = pyg.utils.remove_self_loops(*pyg.utils.to_undirected(
-            torch.tensor(full_edges).T, torch.tensor(attr_d)
-        ))
-        k = 1 / d ** 2
-        full_edge_attr = torch.stack([d, k], dim=-1)
-        return pyg.data.Data(
-            G=G,
-            x=init_pos,
-            init_pos=init_pos,
-            edge_index=full_edge_index,
-            edge_attr=full_edge_attr,
-            raw_edge_index=raw_edge_index,
-            full_edge_index=full_edge_index,
-            full_edge_attr=full_edge_attr,
-            d=d,
-            n=G.number_of_nodes(),
-            m=G.number_of_edges(),
-        )
-
-    def download(self):
+    def download(self) -> None:
         pyg.data.download_url(self.url, self.raw_dir)
         pyg.data.extract_tar(f'{self.raw_dir}/rome-graphml.tgz', self.raw_dir)
 
-    def process(self):
-        data_list = map(self.convert, self.process_raw())
+    def process(self) -> None:
+        def filter_and_save_index(data_list):
+            name_list = []
+            for data in data_list:
+                if self.pre_filter(data):
+                    name_list.append(data.G.graph["name"])
+                    yield data
+            if self.index is None:
+                self.index = name_list
+            else:
+                self.index = [name for name in self.index if name in name_list]
+            with open(self.index_path, "w") as index_file:
+                index_file.write("\n".join(self.index))
 
-        if self.pre_filter is not None:
-            data_list = filter(self.pre_filter, data_list)
-
-        if self.pre_transform is not None:
-            data_list = map(self.pre_transform, data_list)
-
+        data_list = map(self.datatype, self.generate())
+        data_list = filter_and_save_index(data_list)
+        data_list = map(self.pre_transform, data_list)
         data, slices = self.collate(list(data_list))
         torch.save((data, slices), self.processed_paths[0])
