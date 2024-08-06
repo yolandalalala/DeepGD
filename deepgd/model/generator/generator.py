@@ -7,7 +7,6 @@ from attrs import define
 from dataclasses import dataclass
 from typing import Optional
 
-import torch
 from torch import nn, FloatTensor, LongTensor
 
 
