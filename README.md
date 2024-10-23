@@ -20,6 +20,10 @@ With Nvidia V100, each training epoch takes 30s on average. It takes around 600 
 For evaluation on custom data, the easiest way is to subclass `RomeDataset` and override `raw_file_names` and `process_raw` methods.
 > **Caveat**: Even though the behavior of `process` do not need to be overriden, it is required to have a dummy `def process(self): super().process()` defined in the subclasses to make it work properly. For details, please refer to `pyg.data.InMemoryDataset` [documentation](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html#torch_geometric.data.InMemoryDataset).
 
+This repo includes a model checkpoint `model.pt`, which reproduces the result for Stress Minimization-only objective function reported in the paper.
+
+For model benckmarking on a comprehensive set of evaluation metrics and baselines, please refer to [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark).
+
 ## Citation
 If you used our code or find our work useful in your research, please consider citing:
 ```
