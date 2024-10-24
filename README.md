@@ -20,9 +20,9 @@ With Nvidia V100, each training epoch takes 30s on average. It takes around 600 
 For evaluation on custom data, the easiest way is to subclass `RomeDataset` and override `raw_file_names` and `process_raw` methods.
 > **Caveat**: Even though the behavior of `process` do not need to be overriden, it is required to have a dummy `def process(self): super().process()` defined in the subclasses to make it work properly. For details, please refer to `pyg.data.InMemoryDataset` [documentation](https://pytorch-geometric.readthedocs.io/en/latest/modules/data.html#torch_geometric.data.InMemoryDataset).
 
-This repo includes a model checkpoint `model.pt`, which reproduces the result for Stress Minimization-only objective function reported in the paper.
+This repo includes a model checkpoint `model_stress_only.pt`, which reproduces the result for Stress Minimization-only objective function reported in the paper.
 
-For easy benckmarking with DeepGD and a comprehensive set of other baseline methods, please check [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark). This benchmark includes all common graph drawing evaluation metrics and evaluates on the same train/test split for Rome dataset as used in the DeepGD paper.
+For easy benckmarking with DeepGD and a comprehensive set of other baseline methods, please check [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark). This benchmark evaluates all common graph drawing evaluation metrics on the same train/test split for Rome dataset as used in the DeepGD paper.
 
 ## Citation
 If you used our code or find our work useful in your research, please consider citing:
