@@ -1,5 +1,5 @@
 # DeepGD: A Deep Learning Framework for Graph Drawing Using GNN
-This repo contains a simple demonstration for the IEEE CG&A21 paper entitled "[DeepGD: A Deep Learning Framework for Graph Drawing Using GNN](https://arxiv.org/abs/2106.15347)". It includes:
+This repo contains a simple demonstration for the IEEE CG&A21 paper entitled "[DeepGD: A Deep Learning Framework for Graph Drawing Using GNN](https://ieeexplore.ieee.org/document/9476996)". It includes:
 
 * a dataloader for Rome Graphs dataset,
 * a basic implementation of DeepGD model,
@@ -9,7 +9,7 @@ This repo contains a simple demonstration for the IEEE CG&A21 paper entitled "[D
 This code has been tested on python3.10 + cuda11.8 + pytorch2.0 + pyg2.3. Anaconda is suggested for managing dependencies, as installing pyg with pip can be tricky. 
 
 ## Configuration
-The default hyper-parameters of the model have been configured to reproduce the best performance reported in the [DeepGD paper](https://arxiv.org/abs/2106.15347). 
+The default hyper-parameters of the model have been configured to reproduce the best performance reported in the [DeepGD paper](https://ieeexplore.ieee.org/document/9476996). 
 
 However, the layout initializer for the dataset is by default `nx.drawing.random_layout`, which **is not** PivotMDS that yields the best results shown in the paper (random initialization already produces good enough results though). Feel free to modify this behavior by passing a different initializer with `dataset = RomeDataset(layout_initializer=something_else)`. A custom initializer can be any function that follows the behavior of `nx.drawing.random_layout`.
 
