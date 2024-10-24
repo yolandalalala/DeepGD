@@ -22,7 +22,7 @@ For evaluation on custom data, the easiest way is to subclass `RomeDataset` and 
 
 This repo includes a model checkpoint `model_stress_only.pt`, which reproduces the result for Stress Minimization-only objective function reported in the paper.
 
-For easy benckmarking with DeepGD and a comprehensive set of other baseline methods, please check [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark). This benchmark evaluates all common graph drawing evaluation metrics on the same train/test split for Rome dataset as used in the DeepGD paper.
+For easy benckmarking with DeepGD and a comprehensive set of other baseline methods, please check [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark). This benchmark repo automatically evaluates all common graph drawing metrics on the same train/test split for Rome dataset as used in the DeepGD paper.
 
 ## Citation
 If you used our code or find our work useful in your research, please consider citing:
