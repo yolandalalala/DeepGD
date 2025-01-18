@@ -24,6 +24,11 @@ This repo includes a model checkpoint `model_stress_only.pt`, which reproduces t
 
 For easy benckmarking with DeepGD and a comprehensive set of other baseline methods, please check [GraphDrawingBenchmark](https://github.com/yolandalalala/GraphDrawingBenchmark). This benchmark repo automatically evaluates all common graph drawing metrics on the same train/test split for Rome dataset as used in the DeepGD paper.
 
+## 🔗 Subsequent Work - SmartGD
+Beyond the differentiable metrics optimization explored in this work, we further extend the idea to non-differentiable numeric metrics. We propose a more generalized framework called SmartGD for optimizing arbitrary numeric aesthetic metrics. Please check this [repository](https://github.com/yolandalalala/SmartGD) for more details.
+
+Paper: https://ieeexplore.ieee.org/document/10224347
+
 ## Citation
 If you used our code or find our work useful in your research, please consider citing:
 ```
